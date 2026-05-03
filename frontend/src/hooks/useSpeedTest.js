@@ -1,7 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
 
-const PHASES = ['idle', 'finding_server', 'downloading', 'uploading', 'complete', 'error'];
-
 const HISTORY_KEY = 'speedtest_history';
 const MAX_HISTORY = 5;
 
@@ -22,10 +20,6 @@ function saveHistory(entry) {
   return history;
 }
 
-export function clearHistory() {
-  localStorage.removeItem(HISTORY_KEY);
-}
-
 export function useSpeedTest() {
   const [phase, setPhase] = useState('idle');
   const [progress, setProgress] = useState(0);
@@ -34,118 +28,138 @@ export function useSpeedTest() {
   const [server, setServer] = useState(null);
   const [liveSpeed, setLiveSpeed] = useState(0);
   const [history, setHistory] = useState(loadHistory);
-  const intervalRef = useRef(null);
 
-  const simulateProgress = useCallback(() => {
-    const startTime = Date.now();
-    const totalDuration = 22000; // ~22s expected
-    let baseSpeed = 0;
-    let currentSpeed = 0;
-
-    intervalRef.current = setInterval(() => {
-      const elapsed = Date.now() - startTime;
-      const raw = Math.min(elapsed / totalDuration, 0.98);
-      setProgress(raw);
-
-      // Phase transitions
-      if (elapsed > 2000 && elapsed < 2200) {
-        setPhase('downloading');
-      } else if (elapsed > 14000 && elapsed < 14200) {
-        setPhase('uploading');
-        baseSpeed = 0; // Reset for upload phase
-      }
-
-      // Realistic speed simulation
-      if (elapsed < 2000) {
-        // Finding server — low fluctuation
-        currentSpeed = 2 + Math.random() * 5;
-      } else if (elapsed < 14000) {
-        // Download phase — ramp up then fluctuate
-        const dlElapsed = elapsed - 2000;
-        const rampUp = Math.min(dlElapsed / 2000, 1); // 2s ramp
-        const target = 60 + Math.random() * 80;
-        baseSpeed += (target - baseSpeed) * 0.03;
-        const jitter = (Math.random() - 0.5) * 30;
-        const spike = Math.random() > 0.95 ? (Math.random() * 60) : 0;
-        currentSpeed = Math.max(5, baseSpeed * rampUp + jitter + spike);
-      } else {
-        // Upload phase — ramp up then fluctuate at lower speed
-        const ulElapsed = elapsed - 14000;
-        const rampUp = Math.min(ulElapsed / 1500, 1);
-        const target = 30 + Math.random() * 50;
-        baseSpeed += (target - baseSpeed) * 0.03;
-        const jitter = (Math.random() - 0.5) * 20;
-        currentSpeed = Math.max(3, baseSpeed * rampUp + jitter);
-      }
-
-      setLiveSpeed(Math.max(0, currentSpeed));
-    }, 80);
-  }, []);
-
-  const stopSimulation = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-  }, []);
+  const abortControllerRef = useRef(null);
+  const xhrRef = useRef(null);
 
   const runTest = useCallback(async () => {
-    setError(null);
-    setResults(null);
-    setServer(null);
-    setProgress(0);
-    setLiveSpeed(0);
+    if (phase !== 'idle' && phase !== 'complete' && phase !== 'error') return;
+
     setPhase('finding_server');
-    simulateProgress();
+    setProgress(0);
+    setResults(null);
+    setError(null);
+    setLiveSpeed(0);
+    setServer({ name: 'Cloudflare / Render', location: 'Global' });
+
+    abortControllerRef.current = new AbortController();
+    
+    let finalDownload = 0;
+    let finalUpload = 0;
+    let finalPing = 0;
 
     try {
-      const response = await fetch('/api/speedtest');
-      const data = await response.json();
-      stopSimulation();
+      // 1. PING TEST
+      const pingStart = performance.now();
+      await fetch('/api/network-info', { cache: 'no-cache', signal: abortControllerRef.current.signal });
+      finalPing = performance.now() - pingStart;
 
-      if (data.success) {
-        setResults({
-          download: data.download,
-          upload: data.upload,
-          ping: data.ping,
-        });
-        if (data.server) {
-          setServer(data.server);
+      setProgress(0.1);
+      
+      // 2. DOWNLOAD TEST
+      setPhase('downloading');
+      const dlStart = performance.now();
+      let loadedBytes = 0;
+      
+      // Fetch 25MB of random data
+      const dlResponse = await fetch('/api/speedtest/download?size=26214400', {
+        cache: 'no-cache',
+        signal: abortControllerRef.current.signal
+      });
+      
+      const reader = dlResponse.body.getReader();
+      let isDone = false;
+      let lastUpdate = performance.now();
+      
+      while (!isDone) {
+        const { value, done } = await reader.read();
+        isDone = done;
+        if (value) loadedBytes += value.length;
+        
+        const now = performance.now();
+        if (now - lastUpdate > 100) {
+          const elapsedSec = (now - dlStart) / 1000;
+          if (elapsedSec > 0) {
+            const currentSpeed = (loadedBytes * 8 / 1000000) / elapsedSec;
+            setLiveSpeed(currentSpeed);
+            setProgress(0.1 + (loadedBytes / 26214400) * 0.4);
+          }
+          lastUpdate = now;
         }
-        setProgress(1);
-        setPhase('complete');
-        setLiveSpeed(data.download);
-
-        // Save to history
-        const newHistory = saveHistory({
-          download: data.download,
-          upload: data.upload,
-          ping: data.ping,
-          timestamp: Date.now(),
-        });
-        setHistory(newHistory);
-      } else {
-        setPhase('error');
-        setError(data.error || 'Speed test failed');
-        setLiveSpeed(0);
       }
-    } catch (err) {
-      stopSimulation();
-      setPhase('error');
-      setError(err.message || 'Connection error');
-      setLiveSpeed(0);
-    }
-  }, [simulateProgress, stopSimulation]);
+      
+      const dlElapsedSec = (performance.now() - dlStart) / 1000;
+      finalDownload = (loadedBytes * 8 / 1000000) / dlElapsedSec;
+      setLiveSpeed(finalDownload);
+      setProgress(0.5);
 
-  const reset = useCallback(() => {
-    stopSimulation();
+      // 3. UPLOAD TEST
+      setPhase('uploading');
+      setLiveSpeed(0);
+      
+      const uploadBytes = 10485760; // 10MB
+      const dummyData = new Uint8Array(uploadBytes);
+      const blob = new Blob([dummyData], { type: 'application/octet-stream' });
+      
+      finalUpload = await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhrRef.current = xhr;
+        const upStart = performance.now();
+        
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) {
+            const now = performance.now();
+            const elapsedSec = (now - upStart) / 1000;
+            if (elapsedSec > 0.1) {
+              const currentSpeed = (e.loaded * 8 / 1000000) / Math.max(elapsedSec, 0.1);
+              setLiveSpeed(currentSpeed);
+              setProgress(0.5 + (e.loaded / uploadBytes) * 0.4);
+            }
+          }
+        };
+        
+        xhr.onload = () => {
+          const upElapsedSec = (performance.now() - upStart) / 1000;
+          resolve((uploadBytes * 8 / 1000000) / upElapsedSec);
+        };
+        
+        xhr.onerror = () => reject(new Error('Upload failed'));
+        xhr.onabort = () => reject(new Error('Aborted'));
+        
+        xhr.open('POST', '/api/speedtest/upload', true);
+        xhr.send(blob);
+      });
+
+      // 4. COMPLETE
+      setProgress(1.0);
+      setPhase('complete');
+      setLiveSpeed(finalDownload); // Show download on final dial
+
+      const newResult = {
+        download: finalDownload.toFixed(2),
+        upload: finalUpload.toFixed(2),
+        ping: finalPing.toFixed(1),
+        timestamp: new Date().toISOString()
+      };
+      
+      setResults(newResult);
+      setHistory(saveHistory(newResult));
+
+    } catch (err) {
+      if (err.name !== 'AbortError' && err.message !== 'Aborted') {
+        setError(err.message || 'Network error occurred');
+        setPhase('error');
+      }
+    }
+  }, [phase]);
+
+  const cancelTest = useCallback(() => {
+    if (abortControllerRef.current) abortControllerRef.current.abort();
+    if (xhrRef.current) xhrRef.current.abort();
     setPhase('idle');
     setProgress(0);
-    setResults(null);
-    setError(null);
-    setServer(null);
     setLiveSpeed(0);
-  }, [stopSimulation]);
+  }, []);
 
   const handleClearHistory = useCallback(() => {
     clearHistory();
@@ -161,8 +175,8 @@ export function useSpeedTest() {
     liveSpeed,
     history,
     runTest,
-    reset,
-    clearHistory: handleClearHistory,
-    isTesting: !['idle', 'complete', 'error'].includes(phase),
+    cancelTest,
+    isTesting: ['finding_server', 'downloading', 'uploading'].includes(phase),
+    clearHistory: handleClearHistory
   };
 }

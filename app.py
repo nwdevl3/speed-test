@@ -7,7 +7,7 @@ import threading
 import urllib.request
 import urllib.error
 import json
-from flask import Flask, jsonify, send_from_directory
+from flask import Flask, jsonify, send_from_directory, request, Response
 
 # Serve the Vite-built React frontend from frontend/dist
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'frontend', 'dist')
@@ -299,9 +299,7 @@ def catch_all(path):
     return send_from_directory(app.static_folder, 'index.html')
 
 
-@app.route("/api/network-info")
-def api_network_info():
-    return jsonify(get_network_info())
+
 
 
 @app.route("/api/speedtest")
@@ -829,10 +827,36 @@ def scan_network():
     }
 
 
-@app.route("/api/network-scan")
-def api_network_scan():
-    result = scan_network()
-    return jsonify(result)
+@app.route("/api/network-info")
+def api_network_info():
+    return jsonify(get_network_info())
+
+
+@app.route("/api/speedtest/download")
+def api_speedtest_download():
+    """Stream random bytes for download speed testing. Default 20MB."""
+    size_bytes = int(request.args.get('size', 20 * 1024 * 1024))
+    
+    def generate():
+        chunk_size = 65536
+        chunk = os.urandom(chunk_size)
+        num_chunks = size_bytes // chunk_size
+        for _ in range(num_chunks):
+            yield chunk
+            
+        remaining = size_bytes % chunk_size
+        if remaining > 0:
+            yield os.urandom(remaining)
+            
+    return Response(generate(), mimetype='application/octet-stream')
+
+
+@app.route("/api/speedtest/upload", methods=["POST"])
+def api_speedtest_upload():
+    """Consume uploaded bytes for upload speed testing."""
+    # Simply read the data to blackhole it
+    _ = request.data
+    return jsonify({"success": True})
 
 
 if __name__ == "__main__":

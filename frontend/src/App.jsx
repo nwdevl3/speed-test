@@ -6,7 +6,6 @@ import GoButton from './components/GoButton';
 import ProgressBar from './components/ProgressBar';
 import ResultsPanel from './components/ResultsPanel';
 import NetworkInfo from './components/NetworkInfo';
-import NetworkScanner from './components/NetworkScanner';
 import SpeedHistory from './components/SpeedHistory';
 import { useSpeedTest } from './hooks/useSpeedTest';
 
@@ -101,8 +100,6 @@ function App() {
         </AnimatePresence>
 
         <NetworkInfo />
-
-        <NetworkScanner />
 
         <SpeedHistory history={history} onClear={clearHistory} />
       </div>
