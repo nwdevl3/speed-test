@@ -99,7 +99,8 @@ export function useSpeedTest() {
       
       const uploadBytes = 10485760; // 10MB
       const dummyData = new Uint8Array(uploadBytes);
-      const blob = new Blob([dummyData], { type: 'application/octet-stream' });
+      // Use text/plain to avoid CORS preflight OPTIONS request which Cloudflare blocks
+      const blob = new Blob([dummyData], { type: 'text/plain' });
       
       finalUpload = await new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
