@@ -150,11 +150,8 @@ export function useSpeedTest() {
           xhr.onerror = () => resolve();
           xhr.onabort = () => resolve();
           
-          const fd = new FormData();
-          fd.append('file', blob, 'test.bin');
-          
-          xhr.open('POST', 'https://speed.cloudflare.com/__up', true);
-          xhr.send(fd);
+          xhr.open('POST', '/api/speedtest/upload', true);
+          xhr.send(blob);
         }));
       }
 
