@@ -30,7 +30,7 @@ export function useSpeedTest() {
   const [history, setHistory] = useState(loadHistory);
 
   const abortControllerRef = useRef(null);
-  const xhrRef = useRef(null);
+  const xhrRefs = useRef([]);
 
   const runTest = useCallback(async () => {
     if (phase !== 'idle' && phase !== 'complete' && phase !== 'error') return;
@@ -40,9 +40,10 @@ export function useSpeedTest() {
     setResults(null);
     setError(null);
     setLiveSpeed(0);
-    setServer({ name: 'Cloudflare / Render', location: 'Global' });
+    setServer({ name: 'Cloudflare Edge', location: 'Global' });
 
     abortControllerRef.current = new AbortController();
+    xhrRefs.current = [];
     
     let finalDownload = 0;
     let finalUpload = 0;
@@ -56,90 +57,123 @@ export function useSpeedTest() {
 
       setProgress(0.1);
       
-      // 2. DOWNLOAD TEST
+      // 2. DOWNLOAD TEST (Parallel connections to saturate bandwidth)
       setPhase('downloading');
       const dlStart = performance.now();
       let loadedBytes = 0;
+      const numConnections = 4;
+      const dlPromises = [];
       
-      // Fetch 25MB of random data from Cloudflare's edge network for realistic CDNs speeds
-      const dlResponse = await fetch('https://speed.cloudflare.com/__down?bytes=26214400', {
-        cache: 'no-cache',
-        signal: abortControllerRef.current.signal
-      });
-      
-      const reader = dlResponse.body.getReader();
-      let isDone = false;
       let lastUpdate = performance.now();
-      
-      while (!isDone) {
-        const { value, done } = await reader.read();
-        isDone = done;
-        if (value) loadedBytes += value.length;
-        
-        const now = performance.now();
-        if (now - lastUpdate > 100) {
-          const elapsedSec = (now - dlStart) / 1000;
-          if (elapsedSec > 0) {
-            const currentSpeed = (loadedBytes * 8 / 1000000) / elapsedSec;
-            setLiveSpeed(currentSpeed);
-            setProgress(0.1 + (loadedBytes / 26214400) * 0.4);
+
+      for (let i = 0; i < numConnections; i++) {
+        dlPromises.push((async () => {
+          try {
+            const res = await fetch(`https://speed.cloudflare.com/__down?bytes=26214400&c=${i}`, {
+              cache: 'no-cache',
+              signal: abortControllerRef.current.signal
+            });
+            const reader = res.body.getReader();
+            let isDone = false;
+            while (!isDone) {
+              const { value, done } = await reader.read();
+              isDone = done;
+              if (value) loadedBytes += value.length;
+
+              const now = performance.now();
+              if (now - lastUpdate > 100) {
+                const elapsedSec = (now - dlStart) / 1000;
+                if (elapsedSec > 0.1) {
+                  const currentSpeed = (loadedBytes * 8 / 1000000) / elapsedSec;
+                  setLiveSpeed(currentSpeed);
+                  setProgress(0.1 + Math.min((elapsedSec / 8), 1) * 0.4); // max 8 sec
+                }
+                lastUpdate = now;
+              }
+              
+              // End early if it takes more than 8 seconds to save bandwidth
+              if ((now - dlStart) > 8000) break;
+            }
+          } catch (e) {
+            // Ignore aborts
           }
-          lastUpdate = now;
-        }
+        })());
       }
       
-      const dlElapsedSec = (performance.now() - dlStart) / 1000;
+      // Wait for all downloads to finish or timeout
+      await Promise.all(dlPromises);
+      
+      const dlElapsedSec = Math.max((performance.now() - dlStart) / 1000, 0.1);
       finalDownload = (loadedBytes * 8 / 1000000) / dlElapsedSec;
       setLiveSpeed(finalDownload);
       setProgress(0.5);
 
-      // 3. UPLOAD TEST
+      // 3. UPLOAD TEST (Parallel connections)
       setPhase('uploading');
       setLiveSpeed(0);
       
-      const uploadBytes = 10485760; // 10MB
-      const dummyData = new Uint8Array(uploadBytes);
-      // Use text/plain to avoid CORS preflight OPTIONS request which Cloudflare blocks
+      const upStart = performance.now();
+      const uploadBytesPerConn = 5242880; // 5MB per connection
+      const dummyData = new Uint8Array(uploadBytesPerConn);
       const blob = new Blob([dummyData], { type: 'text/plain' });
       
-      finalUpload = await new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhrRef.current = xhr;
-        const upStart = performance.now();
-        
-        xhr.upload.onprogress = (e) => {
-          if (e.lengthComputable) {
-            const now = performance.now();
-            const elapsedSec = (now - upStart) / 1000;
-            if (elapsedSec > 0.1) {
-              const currentSpeed = (e.loaded * 8 / 1000000) / Math.max(elapsedSec, 0.1);
-              setLiveSpeed(currentSpeed);
-              setProgress(0.5 + (e.loaded / uploadBytes) * 0.4);
+      let uploadedBytes = 0;
+      let upLastUpdate = performance.now();
+      const upPromises = [];
+
+      for (let i = 0; i < numConnections; i++) {
+        upPromises.push(new Promise((resolve) => {
+          const xhr = new XMLHttpRequest();
+          xhrRefs.current.push(xhr);
+          
+          let lastLoaded = 0;
+          xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+              const diff = e.loaded - lastLoaded;
+              lastLoaded = e.loaded;
+              uploadedBytes += diff;
+
+              const now = performance.now();
+              if (now - upLastUpdate > 100) {
+                const elapsedSec = (now - upStart) / 1000;
+                if (elapsedSec > 0.1) {
+                  const currentSpeed = (uploadedBytes * 8 / 1000000) / elapsedSec;
+                  setLiveSpeed(currentSpeed);
+                  setProgress(0.5 + Math.min((elapsedSec / 8), 1) * 0.4);
+                }
+                upLastUpdate = now;
+              }
             }
-          }
-        };
-        
-        xhr.onload = () => {
-          const upElapsedSec = (performance.now() - upStart) / 1000;
-          resolve((uploadBytes * 8 / 1000000) / upElapsedSec);
-        };
-        
-        xhr.onerror = () => reject(new Error('Upload failed'));
-        xhr.onabort = () => reject(new Error('Aborted'));
-        
-        xhr.open('POST', '/api/speedtest/upload', true);
-        xhr.send(blob);
-      });
+          };
+          
+          xhr.onload = () => resolve();
+          xhr.onerror = () => resolve();
+          xhr.onabort = () => resolve();
+          
+          xhr.open('POST', '/api/speedtest/upload', true);
+          xhr.send(blob);
+        }));
+      }
+
+      await Promise.all(upPromises);
+
+      const upElapsedSec = Math.max((performance.now() - upStart) / 1000, 0.1);
+      finalUpload = (uploadedBytes * 8 / 1000000) / upElapsedSec;
 
       // 4. COMPLETE
       setProgress(1.0);
       setPhase('complete');
-      setLiveSpeed(finalDownload); // Show download on final dial
+      
+      const cleanDownload = isFinite(finalDownload) ? parseFloat(finalDownload.toFixed(2)) : 0;
+      const cleanUpload = isFinite(finalUpload) ? parseFloat(finalUpload.toFixed(2)) : 0;
+      const cleanPing = isFinite(finalPing) ? parseFloat(finalPing.toFixed(1)) : 0;
+      
+      setLiveSpeed(cleanDownload); // Show download on final dial
 
       const newResult = {
-        download: finalDownload.toFixed(2),
-        upload: finalUpload.toFixed(2),
-        ping: finalPing.toFixed(1),
+        download: cleanDownload,
+        upload: cleanUpload,
+        ping: cleanPing,
         timestamp: new Date().toISOString()
       };
       
@@ -156,7 +190,7 @@ export function useSpeedTest() {
 
   const cancelTest = useCallback(() => {
     if (abortControllerRef.current) abortControllerRef.current.abort();
-    if (xhrRef.current) xhrRef.current.abort();
+    xhrRefs.current.forEach(xhr => xhr.abort());
     setPhase('idle');
     setProgress(0);
     setLiveSpeed(0);
