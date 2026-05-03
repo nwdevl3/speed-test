@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speed Test</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap');
+
+        :root {
+            --bg-1: #0a1020;
+            --bg-2: #121d34;
+            --surface: rgba(255, 255, 255, 0.05);
+            --surface-strong: rgba(255, 255, 255, 0.08);
+            --border: rgba(255, 255, 255, 0.14);
+            --text-dim: #9aa6be;
+            --text-soft: #c6d0e1;
+            --accent: #33c6ff;
+            --accent-2: #47e3c0;
+            --warn: #ffd56a;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Sora', sans-serif;
+            background: radial-gradient(1200px 700px at 15% -10%, #16335f 0%, transparent 60%),
+                        radial-gradient(800px 500px at 90% 20%, #0e4a4a 0%, transparent 55%),
+                        linear-gradient(145deg, var(--bg-1), var(--bg-2));
+            min-height: 100vh;
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        .bg-animation {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .bg-animation::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: radial-gradient(ellipse at 20% 50%, rgba(72, 140, 255, 0.08) 0%, transparent 52%),
+                        radial-gradient(ellipse at 80% 20%, rgba(71, 227, 192, 0.07) 0%, transparent 48%),
+                        radial-gradient(ellipse at 50% 80%, rgba(255, 213, 106, 0.04) 0%, transparent 45%);
+            animation: bgFloat 20s ease-in-out infinite;
+        }
+
+        @keyframes bgFloat {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(2%, -2%) rotate(1deg); }
+            66% { transform: translate(-1%, 1%) rotate(-1deg); }
+        }
+
+        /* Particles */
+        .particles {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px; height: 2px;
+            background: rgba(137, 202, 255, 0.6);
+            border-radius: 50%;
+            animation: floatUp linear infinite;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(100vh) scale(0); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 2.25rem 1.2rem 2.5rem;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 1.8rem;
+        }
+
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.8rem;
+            margin-bottom: 1rem;
+        }
+
+        .logo-icon {
+            width: 48px; height: 48px;
+            background: linear-gradient(140deg, #2ea8ff, #2de0cb);
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 10px 30px rgba(51, 198, 255, 0.35);
+        }
+
+        h1 {
+            font-size: 2.1rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            background: linear-gradient(140deg, #ffffff, #b3dfff 40%, #9ef5e7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: var(--text-dim);
+            font-size: 0.95rem;
+            margin-top: 0.3rem;
+        }
+
+        /* Main speedometer area */
+        .speedometer-section {
+            text-align: center;
+            margin-bottom: 2rem;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03));
+            border: 1px solid var(--border);
+            box-shadow: 0 20px 60px rgba(4, 10, 22, 0.55);
+            backdrop-filter: blur(8px);
+            border-radius: 24px;
+            padding: 2rem 1.25rem 1.4rem;
+        }
+
+        .speedometer-container {
+            position: relative;
+            width: 340px;
+            height: 340px;
+            margin: 0 auto 1.5rem;
+        }
+
+        .speedometer-svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(0deg);
+        }
+
+        .dial-progress-track {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.12);
+            stroke-width: 8;
+            stroke-linecap: round;
+            opacity: 0.55;
+        }
+
+        .dial-progress-fill {
+            fill: none;
+            stroke: url(#dialProgressGradient);
+            stroke-width: 8;
+            stroke-linecap: round;
+            stroke-dasharray: 706.9;
+            stroke-dashoffset: 706.9;
+            transition: stroke-dashoffset 0.35s ease;
+            filter: drop-shadow(0 0 8px rgba(51, 198, 255, 0.65));
+        }
+
+        .needle {
+            transition: transform 0.65s cubic-bezier(0.2, 1.15, 0.35, 1);
+            transform-origin: 170px 170px;
+            will-change: transform;
+        }
+
+        .needle.fast {
+            transition: transform 0.11s linear;
+        }
+
+        .needle-line {
+            stroke: #fff;
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            filter: drop-shadow(0 0 7px rgba(179, 232, 255, 0.9));
+        }
+
+        .needle-dot {
+            fill: #fff;
+            filter: drop-shadow(0 0 10px rgba(157, 242, 220, 0.8));
+        }
+
+        .speed-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .speed-value {
+            font-size: 4rem;
+            font-weight: 800;
+            line-height: 1;
+            color: #fff;
+            letter-spacing: -0.04em;
+            text-shadow: 0 0 24px rgba(76, 188, 255, 0.45);
+        }
+
+        .speed-unit {
+            font-size: 1rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 0.3rem;
+        }
+
+        .speed-label {
+            font-size: 0.8rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-top: 0.5rem;
+        }
+
+        /* GO button */
+        .go-btn {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 3px solid rgba(70, 206, 255, 0.6);
+            background: radial-gradient(circle, rgba(57, 182, 255, 0.24), rgba(12, 32, 61, 0.15));
+            color: #fff;
+            font-size: 1.4rem;
+            font-weight: 700;
+            cursor: pointer;
+            letter-spacing: 2px;
+            transition: all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 14px 35px rgba(17, 90, 125, 0.35);
+        }
+
+        .go-btn::before {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: 50%;
+            background: conic-gradient(from 0deg, #2fb3ff, #47e3c0, #ffd56a, #2fb3ff);
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: -1;
+        }
+
+        .go-btn::after {
+            content: '';
+            position: absolute;
+            inset: 8px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            opacity: 0.65;
+        }
+
+        .go-btn:hover::before {
+            opacity: 1;
+        }
+
+        .go-btn:hover {
+            transform: scale(1.1) translateY(-2px);
+            box-shadow: 0 0 45px rgba(46, 184, 255, 0.45);
+            border-color: transparent;
+        }
+
+        .go-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .go-btn:disabled:hover::before {
+            opacity: 0;
+        }
+
+        /* Status */
+        .status-area {
+            margin: 1.5rem 0;
+            text-align: center;
+        }
+
+        .test-progress-wrap {
+            width: min(520px, 92%);
+            margin: 0.2rem auto 0;
+            display: none;
+        }
+
+        .test-progress-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            margin-bottom: 0.4rem;
+            letter-spacing: 0.02em;
+        }
+
+        .test-progress-track {
+            height: 8px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.14);
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+        }
+
+        .test-progress-fill {
+            height: 100%;
+            width: 0%;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #2fb3ff, #47e3c0, #ffd56a);
+            box-shadow: 0 0 14px rgba(71, 227, 192, 0.55);
+            transition: width 0.22s linear;
+        }
+
+        .status-text {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            transition: color 0.3s;
+        }
+
+        .status-text.active {
+            color: #b8dfff;
+        }
+
+        .progress-dots {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 0.8rem;
+        }
+
+        .progress-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            transition: all 0.4s ease;
+        }
+
+        .progress-dot.active {
+            background: var(--accent);
+            box-shadow: 0 0 12px rgba(51, 198, 255, 0.75);
+        }
+
+        .progress-dot.done {
+            background: var(--accent-2);
+            box-shadow: 0 0 10px rgba(78, 205, 196, 0.6);
+        }
+
+        /* Results panels */
+        .results-panel {
+            display: none;
+            margin-top: 2rem;
+        }
+
+        .results-panel.visible {
+            display: block;
+            animation: fadeInUp 0.6s ease;
+        }
+
+        .results-panel.visible .result-card {
+            animation: fadeInUp 0.55s ease both;
+        }
+
+        .results-panel.visible .result-card:nth-child(2) {
+            animation-delay: 0.08s;
+        }
+
+        .results-panel.visible .result-card:nth-child(3) {
+            animation-delay: 0.16s;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .result-card {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03));
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.25s ease, border-color 0.25s ease;
+        }
+
+        .result-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(164, 224, 255, 0.35);
+        }
+
+        .result-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+        }
+
+        .result-card.download::before { background: linear-gradient(90deg, #4ecdc4, #44a8a0); }
+        .result-card.upload::before { background: linear-gradient(90deg, #764ba2, #667eea); }
+        .result-card.ping-card::before { background: linear-gradient(90deg, #ffd93d, #f0c419); }
+
+        .result-icon {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .result-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-dim);
+            margin-bottom: 0.3rem;
+        }
+
+        .result-value {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .result-card.download .result-value { color: #4ecdc4; }
+        .result-card.upload .result-value { color: #764ba2; }
+        .result-card.ping-card .result-value { color: #ffd93d; }
+
+        .result-unit {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
+
+        /* Mini gauge in result cards */
+        .mini-gauge {
+            width: 80px; height: 44px;
+            margin: 0.5rem auto 0;
+        }
+
+        .mini-track {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.08);
+            stroke-width: 6;
+            stroke-linecap: round;
+        }
+
+        .mini-fill {
+            fill: none;
+            stroke-width: 6;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Server info */
+        .server-info {
+            text-align: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-soft);
+            font-size: 0.85rem;
+            display: none;
+        }
+
+        .server-info.visible { display: block; }
+
+        /* Network info */
+        .network-info-card {
+            margin-top: 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1rem 1.25rem;
+        }
+
+        .network-info-title {
+            font-size: 0.82rem;
+            color: #9dd9ff;
+            margin-bottom: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .network-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.8rem;
+        }
+
+        .network-item {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 0.8rem;
+        }
+
+        .network-label {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 0.35rem;
+        }
+
+        .network-value {
+            font-size: 0.95rem;
+            color: #fff;
+            font-weight: 600;
+            word-break: break-word;
+        }
+
+        .error {
+            color: #ff7676;
+            text-align: center;
+            padding: 1rem;
+            font-size: 0.9rem;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .results-grid { grid-template-columns: 1fr; }
+            .speedometer-container { width: 280px; height: 280px; }
+            .speed-value { font-size: 3rem; }
+            .network-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animation"></div>
+    <div class="particles" id="particles"></div>
+
+    <div class="container">
+        <div class="header">
+            <div class="logo">
+                <div class="logo-icon">&#9889;</div>
+                <h1>SpeedTest</h1>
+            </div>
+            <p class="subtitle">Test your internet speed, latency &amp; ping</p>
+        </div>
+
+        <!-- Main Speedometer -->
+        <div class="speedometer-section">
+            <div class="speedometer-container" id="speedoContainer">
+                <svg class="speedometer-svg" viewBox="0 0 340 340">
+                    <defs>
+                        <linearGradient id="dialProgressGradient" x1="0" y1="0" x2="340" y2="0" gradientUnits="userSpaceOnUse">
+                            <stop offset="0%" stop-color="#2fb3ff"/>
+                            <stop offset="55%" stop-color="#47e3c0"/>
+                            <stop offset="100%" stop-color="#ffd56a"/>
+                        </linearGradient>
+                    </defs>
+
+                    <path class="dial-progress-track" d="M 63.93 276.07 A 150 150 0 1 1 276.07 276.07"/>
+                    <path id="dialProgressFill" class="dial-progress-fill" d="M 63.93 276.07 A 150 150 0 1 1 276.07 276.07"/>
+
+                    <!-- Tick marks -->
+                    <g id="tickMarks"></g>
+                    <!-- Needle -->
+                    <g class="needle" id="needle">
+                        <line class="needle-line" x1="170" y1="170" x2="170" y2="75"/>
+                        <circle class="needle-dot" cx="170" cy="170" r="6"/>
+                    </g>
+
+                </svg>
+                <div class="speed-display">
+                    <div class="speed-value" id="mainSpeedValue">--</div>
+                    <div class="speed-unit" id="mainSpeedUnit">Mbps</div>
+                    <div class="speed-label" id="mainSpeedLabel">ready</div>
+                </div>
+            </div>
+
+            <!-- GO button (shown when idle) -->
+            <button class="go-btn" id="goBtn" onclick="runSpeedTest()">GO</button>
+
+            <div class="status-area">
+                <p class="status-text" id="statusText">Click GO to start</p>
+                <div class="progress-dots" id="progressDots" style="display:none;">
+                    <div class="progress-dot" id="dot1"></div>
+                    <div class="progress-dot" id="dot2"></div>
+                    <div class="progress-dot" id="dot3"></div>
+                    <div class="progress-dot" id="dot4"></div>
+                </div>
+            </div>
+
+            <div class="test-progress-wrap" id="testProgressWrap">
+                <div class="test-progress-head">
+                    <span id="testProgressLabel">Preparing test...</span>
+                    <span id="testProgressPct">0%</span>
+                </div>
+                <div class="test-progress-track">
+                    <div class="test-progress-fill" id="testProgressFill"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="network-info-card">
+            <div class="network-info-title">Network Details</div>
+            <div class="network-grid">
+                <div class="network-item">
+                    <div class="network-label">Public IP</div>
+                    <div class="network-value" id="publicIp">Loading...</div>
+                </div>
+                <div class="network-item">
+                    <div class="network-label">ISP</div>
+                    <div class="network-value" id="ispName">Loading...</div>
+                </div>
+                <div class="network-item">
+                    <div class="network-label">City</div>
+                    <div class="network-value" id="cityName">--</div>
+                </div>
+                <div class="network-item">
+                    <div class="network-label">Country</div>
+                    <div class="network-value" id="countryName">--</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div class="results-panel" id="resultsPanel">
+            <div class="results-grid">
+                <div class="result-card download">
+                    <div class="result-icon">&#11015;&#65039;</div>
+                    <div class="result-label">Download</div>
+                    <div class="result-value" id="downloadResult">--</div>
+                    <div class="result-unit">Mbps</div>
+                    <svg class="mini-gauge" viewBox="0 0 80 44">
+                        <path class="mini-track" d="M 8 40 A 32 32 0 0 1 72 40"/>
+                        <path class="mini-fill" id="miniDown" d="M 8 40 A 32 32 0 0 1 72 40"
+                              stroke="#4ecdc4" stroke-dasharray="100" stroke-dashoffset="100"/>
+                    </svg>
+                </div>
+                <div class="result-card upload">
+                    <div class="result-icon">&#11014;&#65039;</div>
+                    <div class="result-label">Upload</div>
+                    <div class="result-value" id="uploadResult">--</div>
+                    <div class="result-unit">Mbps</div>
+                    <svg class="mini-gauge" viewBox="0 0 80 44">
+                        <path class="mini-track" d="M 8 40 A 32 32 0 0 1 72 40"/>
+                        <path class="mini-fill" id="miniUp" d="M 8 40 A 32 32 0 0 1 72 40"
+                              stroke="#764ba2" stroke-dasharray="100" stroke-dashoffset="100"/>
+                    </svg>
+                </div>
+                <div class="result-card ping-card">
+                    <div class="result-icon">&#128225;</div>
+                    <div class="result-label">Ping</div>
+                    <div class="result-value" id="pingResult">--</div>
+                    <div class="result-unit">ms</div>
+                    <svg class="mini-gauge" viewBox="0 0 80 44">
+                        <path class="mini-track" d="M 8 40 A 32 32 0 0 1 72 40"/>
+                        <path class="mini-fill" id="miniPing" d="M 8 40 A 32 32 0 0 1 72 40"
+                              stroke="#ffd93d" stroke-dasharray="100" stroke-dashoffset="100"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="server-info" id="serverInfo">
+                Server: <span id="serverName">--</span> &bull; <span id="serverLocation">--</span>
+            </div>
+        </div>
+
+        <div class="error" id="errorMsg" style="display: none;"></div>
+    </div>
+
+    <script>
+        // Constants
+        const SPEEDO_ARC = 706.9;  // 2*PI*150*(270/360)
+        const MINI_ARC = 100;
+        const START_ANGLE = -135;  // needle angle at 0 (clockwise from UP)
+        const END_ANGLE = 135;     // needle angle at max
+        const TOTAL_ANGLE = END_ANGLE - START_ANGLE; // 270 degrees
+        const TEST_TOTAL_MS = 20000;
+
+        // Create particles
+        (function createParticles() {
+            const container = document.getElementById('particles');
+            for (let i = 0; i < 30; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.style.left = Math.random() * 100 + '%';
+                p.style.animationDuration = (8 + Math.random() * 12) + 's';
+                p.style.animationDelay = Math.random() * 10 + 's';
+                p.style.width = p.style.height = (1 + Math.random() * 2) + 'px';
+                container.appendChild(p);
+            }
+        })();
+
+        // Create tick marks
+        (function createTicks() {
+            const g = document.getElementById('tickMarks');
+            const speeds = [0, 50, 100, 150, 200, 300, 400, 500];
+            const cx = 170, cy = 170;
+            const rOuter = 136;  // outer tick radius
+
+            for (let i = 0; i <= 40; i++) {
+                // Needle angle in degrees (clockwise from UP)
+                const needleDeg = START_ANGLE + (TOTAL_ANGLE * i / 40);
+                const needleRad = needleDeg * Math.PI / 180;
+                // Convert to SVG position: x = cx + r*sin(angle), y = cy - r*cos(angle)
+                const isMajor = i % 5 === 0;
+                const len = isMajor ? 14 : 7;
+                const x1 = cx + (rOuter - len) * Math.sin(needleRad);
+                const y1 = cy - (rOuter - len) * Math.cos(needleRad);
+                const x2 = cx + rOuter * Math.sin(needleRad);
+                const y2 = cy - rOuter * Math.cos(needleRad);
+
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', x1);
+                line.setAttribute('y1', y1);
+                line.setAttribute('x2', x2);
+                line.setAttribute('y2', y2);
+                line.setAttribute('stroke', isMajor ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.15)');
+                line.setAttribute('stroke-width', isMajor ? '2' : '1');
+                g.appendChild(line);
+
+                if (isMajor && speeds[i / 5] !== undefined) {
+                    const labelR = rOuter + 14;
+                    const tx = cx + labelR * Math.sin(needleRad);
+                    const ty = cy - labelR * Math.cos(needleRad);
+                    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    text.setAttribute('x', tx);
+                    text.setAttribute('y', ty);
+                    text.setAttribute('text-anchor', 'middle');
+                    text.setAttribute('dominant-baseline', 'middle');
+                    text.setAttribute('fill', 'rgba(255,255,255,0.4)');
+                    text.setAttribute('font-size', '10');
+                    text.textContent = speeds[i / 5];
+                    g.appendChild(text);
+                }
+            }
+        })();
+
+        // Needle rotation
+        function setNeedleAngle(ratio) {
+            const angle = START_ANGLE + TOTAL_ANGLE * Math.min(ratio, 1);
+            document.getElementById('needle').style.transform = `rotate(${angle}deg)`;
+        }
+
+        // Set dial progress arc around speedometer
+        function setSpeedoFill(ratio) {
+            const offset = SPEEDO_ARC * (1 - Math.max(0, Math.min(1, ratio)));
+            document.getElementById('dialProgressFill').style.strokeDashoffset = offset;
+        }
+
+        // Set mini gauge
+        function setMiniFill(id, ratio) {
+            const offset = MINI_ARC * (1 - Math.min(ratio, 1));
+            document.getElementById(id).style.strokeDashoffset = offset;
+        }
+
+        // Bottom testing progress bar
+        function setTestProgress(ratio, labelText) {
+            const safeRatio = Math.max(0, Math.min(1, ratio));
+            document.getElementById('testProgressFill').style.width = (safeRatio * 100).toFixed(1) + '%';
+            document.getElementById('testProgressPct').textContent = Math.round(safeRatio * 100) + '%';
+            if (labelText) {
+                document.getElementById('testProgressLabel').textContent = labelText;
+            }
+        }
+
+        function resetTestProgress() {
+            document.getElementById('testProgressWrap').style.display = 'none';
+            setTestProgress(0, 'Preparing test...');
+        }
+
+        // Reset
+        function resetSpeedo() {
+            document.getElementById('needle').classList.remove('fast');
+            setNeedleAngle(0);
+            setSpeedoFill(0);
+            resetTestProgress();
+            document.getElementById('mainSpeedValue').textContent = '--';
+            document.getElementById('mainSpeedLabel').textContent = 'ready';
+            document.getElementById('mainSpeedUnit').textContent = 'Mbps';
+        }
+
+        // Progress dots
+        function setDots(step) {
+            for (let i = 1; i <= 4; i++) {
+                const dot = document.getElementById('dot' + i);
+                dot.classList.remove('active', 'done');
+                if (i < step) dot.classList.add('done');
+                else if (i === step) dot.classList.add('active');
+            }
+        }
+
+        // Animated counter
+        function animateCounter(el, target, duration = 1200) {
+            const start = performance.now();
+            function tick(now) {
+                const t = Math.min((now - start) / duration, 1);
+                const eased = 1 - Math.pow(1 - t, 3);
+                const val = target * eased;
+                el.textContent = val.toFixed(val >= 100 ? 0 : val >= 10 ? 1 : 2);
+                if (t < 1) requestAnimationFrame(tick);
+            }
+            requestAnimationFrame(tick);
+        }
+
+        // Speed test loading animation - needle sweeps back and forth
+        let simInterval;
+        function startSimulation() {
+            document.getElementById('needle').classList.add('fast');
+            document.getElementById('goBtn').style.display = 'none';
+            document.getElementById('progressDots').style.display = 'flex';
+            document.getElementById('testProgressWrap').style.display = 'block';
+            setTestProgress(0, 'Finding server...');
+            setDots(1);
+            document.getElementById('statusText').textContent = 'Finding best server...';
+            document.getElementById('statusText').classList.add('active');
+            document.getElementById('mainSpeedLabel').textContent = 'testing';
+            document.getElementById('mainSpeedValue').textContent = '...';
+
+            let elapsed = 0;
+            let sweepAngle = 0;
+            const sweepSpeed = 3;
+
+            simInterval = setInterval(() => {
+                elapsed += 50;
+
+                if (elapsed > 2000 && elapsed < 2100) {
+                    setDots(2);
+                    document.getElementById('statusText').textContent = 'Testing download...';
+                    document.getElementById('mainSpeedLabel').textContent = 'download';
+                    setTestProgress(elapsed / TEST_TOTAL_MS, 'Testing download...');
+                }
+
+                if (elapsed > 15000 && elapsed < 15100) {
+                    setDots(3);
+                    document.getElementById('statusText').textContent = 'Testing upload...';
+                    document.getElementById('mainSpeedLabel').textContent = 'upload';
+                    setTestProgress(elapsed / TEST_TOTAL_MS, 'Testing upload...');
+                }
+
+                // Gentle sweep animation
+                sweepAngle += sweepSpeed;
+                const ratio = 0.15 + 0.12 * Math.sin(sweepAngle * Math.PI / 180);
+                setNeedleAngle(ratio);
+
+                // Dial arc now represents speed value (same ratio as needle)
+                setSpeedoFill(ratio);
+
+                // Bottom bar represents testing progress
+                setTestProgress(Math.min(elapsed / TEST_TOTAL_MS, 0.98));
+            }, 50);
+        }
+
+        function stopSimulation() {
+            clearInterval(simInterval);
+            document.getElementById('needle').classList.remove('fast');
+        }
+
+        function showResults(download, upload, ping) {
+            stopSimulation();
+            setDots(4);
+            document.getElementById('statusText').textContent = 'Test complete';
+            document.getElementById('mainSpeedLabel').textContent = 'download';
+            document.getElementById('mainSpeedValue').textContent = download.toFixed(1);
+            setTestProgress(1, 'Completed');
+
+            // Animate main dial to download
+            const ratio = download / 500;
+            setNeedleAngle(ratio);
+            setSpeedoFill(ratio);
+
+            // Show results panel
+            const panel = document.getElementById('resultsPanel');
+            panel.classList.add('visible');
+
+            // Fill result cards
+            animateCounter(document.getElementById('downloadResult'), download);
+            animateCounter(document.getElementById('uploadResult'), upload);
+            animateCounter(document.getElementById('pingResult'), ping);
+
+            // Mini gauges
+            setTimeout(() => {
+                setMiniFill('miniDown', download / 500);
+                setMiniFill('miniUp', upload / 500);
+                setMiniFill('miniPing', Math.min(ping / 200, 1));
+            }, 300);
+
+            setTimeout(() => {
+                document.getElementById('goBtn').style.display = '';
+                document.getElementById('progressDots').style.display = 'none';
+                document.getElementById('statusText').classList.remove('active');
+                document.getElementById('statusText').textContent = 'Click GO to test again';
+                document.getElementById('testProgressWrap').style.display = 'none';
+            }, 2000);
+        }
+
+        function showError(msg) {
+            document.getElementById('errorMsg').textContent = msg;
+            document.getElementById('errorMsg').style.display = 'block';
+        }
+
+        function hideError() {
+            document.getElementById('errorMsg').style.display = 'none';
+        }
+
+        function setButtonsDisabled(disabled) {
+            document.getElementById('goBtn').disabled = disabled;
+        }
+
+        async function loadNetworkInfo() {
+            try {
+                const response = await fetch('/api/network-info');
+                const data = await response.json();
+
+                document.getElementById('publicIp').textContent = data.ip || 'Unavailable';
+                document.getElementById('ispName').textContent = data.isp || 'Unavailable';
+                document.getElementById('cityName').textContent = data.city || '--';
+                document.getElementById('countryName').textContent = data.country || '--';
+            } catch (err) {
+                document.getElementById('publicIp').textContent = 'Unavailable';
+                document.getElementById('ispName').textContent = 'Unavailable';
+                document.getElementById('cityName').textContent = '--';
+                document.getElementById('countryName').textContent = '--';
+            }
+        }
+
+        async function runSpeedTest() {
+            hideError();
+            document.getElementById('resultsPanel').classList.remove('visible');
+            document.getElementById('serverInfo').classList.remove('visible');
+            setButtonsDisabled(true);
+            resetSpeedo();
+            startSimulation();
+
+            try {
+                const response = await fetch('/api/speedtest');
+                const data = await response.json();
+                stopSimulation();
+
+                if (data.success) {
+                    showResults(data.download, data.upload, data.ping);
+                    if (data.server) {
+                        document.getElementById('serverName').textContent = data.server.name;
+                        document.getElementById('serverLocation').textContent = data.server.location;
+                        document.getElementById('serverInfo').classList.add('visible');
+                    }
+                } else {
+                    resetSpeedo();
+                    document.getElementById('goBtn').style.display = '';
+                    document.getElementById('progressDots').style.display = 'none';
+                    setSpeedoFill(0);
+                    showError('Speed test failed: ' + data.error);
+                }
+            } catch (err) {
+                stopSimulation();
+                resetSpeedo();
+                document.getElementById('goBtn').style.display = '';
+                document.getElementById('progressDots').style.display = 'none';
+                setSpeedoFill(0);
+                showError('Connection error: ' + err.message);
+            }
+
+            setButtonsDisabled(false);
+        }
+
+        function escapeHtml(text) {
+            const d = document.createElement('div');
+            d.textContent = text;
+            return d.innerHTML;
+        }
+
+        // Init needle position at zero (start of dial)
+        setNeedleAngle(0);
+        setSpeedoFill(0);
+        loadNetworkInfo();
+    </script>
+</body>
+</html>
