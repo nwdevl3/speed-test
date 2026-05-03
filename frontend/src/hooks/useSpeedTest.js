@@ -115,7 +115,7 @@ export function useSpeedTest() {
       const upStart = performance.now();
       const uploadBytesPerConn = 5242880; // 5MB per connection
       const dummyData = new Uint8Array(uploadBytesPerConn);
-      const blob = new Blob([dummyData], { type: 'text/plain' });
+      const blob = new Blob([dummyData], { type: 'application/octet-stream' });
       
       let uploadedBytes = 0;
       let upLastUpdate = performance.now();
@@ -150,8 +150,11 @@ export function useSpeedTest() {
           xhr.onerror = () => resolve();
           xhr.onabort = () => resolve();
           
-          xhr.open('POST', '/api/speedtest/upload', true);
-          xhr.send(blob);
+          const fd = new FormData();
+          fd.append('file', blob, 'test.bin');
+          
+          xhr.open('POST', 'https://speed.cloudflare.com/__up', true);
+          xhr.send(fd);
         }));
       }
 

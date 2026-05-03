@@ -37,14 +37,14 @@ def get_network_info():
     country = ""
 
     try:
-        target = ip if ip != "Unknown" else ""
-        req = urllib.request.Request(f"https://ipapi.co/{target}/json/")
+        target = ip if (ip and ip != "Unknown" and ip != "127.0.0.1") else ""
+        req = urllib.request.Request(f"http://ip-api.com/json/{target}")
         req.add_header("User-Agent", "Mozilla/5.0")
         with urllib.request.urlopen(req, timeout=8) as resp:
             data = json.loads(resp.read().decode("utf-8", errors="ignore"))
-            isp = data.get("org") or data.get("asn_org") or data.get("asn") or "Unknown"
+            isp = data.get("isp") or data.get("org") or data.get("as") or "Unknown"
             city = data.get("city") or ""
-            country = data.get("country_name") or data.get("country") or ""
+            country = data.get("country") or ""
     except Exception:
         pass
 
