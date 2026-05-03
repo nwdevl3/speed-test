@@ -178,7 +178,7 @@ export default function Speedometer({ speed = 0, phase = 'idle', label = 'ready'
             y1={CY + 14}
             x2={CX}
             y2={CY - NEEDLE_LEN}
-            stroke="#ffffff"
+            stroke="var(--text-primary, #ffffff)"
             strokeWidth="3"
             strokeLinecap="round"
             filter="url(#needleGlow)"
@@ -200,14 +200,14 @@ export default function Speedometer({ speed = 0, phase = 'idle', label = 'ready'
             cx={CX}
             cy={CY - NEEDLE_LEN}
             r="3"
-            fill="#fff"
+            fill="var(--text-primary, #fff)"
             opacity="0.9"
           />
         </g>
 
         {/* Center hub (not rotated — stays fixed) */}
-        <circle cx={CX} cy={CY} r="6" fill="var(--bg-primary, #06090f)" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
-        <circle cx={CX} cy={CY} r="3" fill="#fff" opacity="0.85" />
+        <circle cx={CX} cy={CY} r="6" fill="var(--bg-primary, #06090f)" stroke="var(--border, rgba(255,255,255,0.15))" strokeWidth="1" />
+        <circle cx={CX} cy={CY} r="3" fill="var(--text-primary, #fff)" opacity="0.85" />
         <circle cx={CX} cy={CY} r="1.5" fill="var(--accent-cyan, #06b6d4)" />
 
         {/* Gradient for needle line */}
