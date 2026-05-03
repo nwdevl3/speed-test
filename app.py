@@ -277,10 +277,15 @@ def run_speed_test():
         return {"success": False, "error": str(e)}
 
 
+@app.route("/health")
+def health_check():
+    return "OK", 200
+
 @app.route("/")
 def index():
+    if not os.path.exists(os.path.join(app.static_folder, 'index.html')):
+        return "Frontend build not found. Make sure your Render build command includes 'cd frontend && npm install && npm run build'", 404
     return send_from_directory(app.static_folder, 'index.html')
-
 
 @app.route("/<path:path>")
 def catch_all(path):
@@ -288,6 +293,9 @@ def catch_all(path):
     file_path = os.path.join(app.static_folder, path)
     if os.path.isfile(file_path):
         return send_from_directory(app.static_folder, path)
+        
+    if not os.path.exists(os.path.join(app.static_folder, 'index.html')):
+        return "Frontend build not found.", 404
     return send_from_directory(app.static_folder, 'index.html')
 
 
