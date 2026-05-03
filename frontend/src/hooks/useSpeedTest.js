@@ -226,7 +226,7 @@ export function useSpeedTest() {
   }, []);
 
   const handleClearHistory = useCallback(() => {
-    clearHistory();
+    localStorage.removeItem(HISTORY_KEY);
     setHistory([]);
   }, []);
 
