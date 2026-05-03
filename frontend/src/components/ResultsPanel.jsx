@@ -69,6 +69,15 @@ export default function ResultsPanel({ results, server, visible }) {
       color: 'var(--ping-color)',
       ratio: Math.min(results.ping / 200, 1),
     },
+    {
+      type: 'jitter',
+      icon: '〰',
+      label: 'Jitter',
+      value: results.jitter,
+      unit: 'ms',
+      color: '#fbbf24',
+      ratio: Math.min(results.jitter / 50, 1),
+    },
   ];
 
   return (

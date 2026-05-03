@@ -7,6 +7,9 @@ import ProgressBar from './components/ProgressBar';
 import ResultsPanel from './components/ResultsPanel';
 import NetworkInfo from './components/NetworkInfo';
 import SpeedHistory from './components/SpeedHistory';
+import ThemeToggle from './components/ThemeToggle';
+import SpeedGraph from './components/SpeedGraph';
+import EstimatorPanel from './components/EstimatorPanel';
 import { useSpeedTest } from './hooks/useSpeedTest';
 
 const PHASE_LABELS = {
@@ -27,6 +30,7 @@ function App() {
     server,
     liveSpeed,
     history,
+    chartData,
     runTest,
     isTesting,
     clearHistory,
@@ -41,6 +45,10 @@ function App() {
       <div className="ambient-glow" />
 
       <div className="app-container">
+        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '1rem' }}>
+          <ThemeToggle />
+        </div>
+        
         <Header />
 
         <div className="speedometer-section">
@@ -72,6 +80,8 @@ function App() {
             visible={isTesting || phase === 'complete'}
           />
 
+          <SpeedGraph data={chartData} />
+
           {phase === 'complete' && (
             <div style={{ textAlign: 'center', marginTop: '1rem' }}>
               <GoButton
@@ -91,11 +101,17 @@ function App() {
 
         <AnimatePresence>
           {phase === 'complete' && results && (
-            <ResultsPanel
-              results={results}
-              server={server}
-              visible={true}
-            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+              <ResultsPanel
+                results={results}
+                server={server}
+                visible={true}
+              />
+              <EstimatorPanel 
+                results={results} 
+                visible={true} 
+              />
+            </div>
           )}
         </AnimatePresence>
 

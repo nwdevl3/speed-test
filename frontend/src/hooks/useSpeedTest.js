@@ -28,6 +28,7 @@ export function useSpeedTest() {
   const [server, setServer] = useState(null);
   const [liveSpeed, setLiveSpeed] = useState(0);
   const [history, setHistory] = useState(loadHistory);
+  const [chartData, setChartData] = useState([]); // Stores { time, download, upload }
 
   const abortControllerRef = useRef(null);
   const xhrRefs = useRef([]);
@@ -40,6 +41,7 @@ export function useSpeedTest() {
     setResults(null);
     setError(null);
     setLiveSpeed(0);
+    setChartData([]);
     setServer({ name: 'Cloudflare Edge', location: 'Global' });
 
     abortControllerRef.current = new AbortController();
@@ -48,16 +50,31 @@ export function useSpeedTest() {
     let finalDownload = 0;
     let finalUpload = 0;
     let finalPing = 0;
+    let finalJitter = 0;
+    
+    const newChartData = [];
 
     try {
-      // 1. PING TEST
-      const pingStart = performance.now();
-      await fetch('/api/network-info', { cache: 'no-cache', signal: abortControllerRef.current.signal });
-      finalPing = performance.now() - pingStart;
+      // 1. PING & JITTER TEST (10 pings)
+      const pings = [];
+      for (let i = 0; i < 10; i++) {
+        const pingStart = performance.now();
+        await fetch('/api/network-info', { cache: 'no-cache', signal: abortControllerRef.current.signal });
+        pings.push(performance.now() - pingStart);
+      }
+      
+      finalPing = pings.reduce((a, b) => a + b, 0) / pings.length;
+      
+      // Calculate Jitter (average absolute difference between consecutive pings)
+      let jitterSum = 0;
+      for (let i = 1; i < pings.length; i++) {
+        jitterSum += Math.abs(pings[i] - pings[i - 1]);
+      }
+      finalJitter = pings.length > 1 ? jitterSum / (pings.length - 1) : 0;
 
       setProgress(0.1);
       
-      // 2. DOWNLOAD TEST (Parallel connections to saturate bandwidth)
+      // 2. DOWNLOAD TEST (Parallel connections)
       setPhase('downloading');
       const dlStart = performance.now();
       let loadedBytes = 0;
@@ -81,18 +98,20 @@ export function useSpeedTest() {
               if (value) loadedBytes += value.length;
 
               const now = performance.now();
+              const elapsedSec = (now - dlStart) / 1000;
+              
               if (now - lastUpdate > 100) {
-                const elapsedSec = (now - dlStart) / 1000;
                 if (elapsedSec > 0.1) {
                   const currentSpeed = (loadedBytes * 8 / 1000000) / elapsedSec;
                   setLiveSpeed(currentSpeed);
-                  setProgress(0.1 + Math.min((elapsedSec / 8), 1) * 0.4); // max 8 sec
+                  setProgress(0.1 + Math.min((elapsedSec / 8), 1) * 0.4);
+                  newChartData.push({ time: elapsedSec.toFixed(1), download: currentSpeed, upload: null });
+                  setChartData([...newChartData]);
                 }
                 lastUpdate = now;
               }
               
-              // End early if it takes more than 8 seconds to save bandwidth
-              if ((now - dlStart) > 8000) break;
+              if (elapsedSec > 8) break;
             }
           } catch (e) {
             // Ignore aborts
@@ -100,11 +119,10 @@ export function useSpeedTest() {
         })());
       }
       
-      // Wait for all downloads to finish or timeout
       await Promise.all(dlPromises);
       
       const dlElapsedSec = Math.max((performance.now() - dlStart) / 1000, 0.1);
-      finalDownload = (loadedBytes * 8 / 1000000) / dlElapsedSec;
+      finalDownload = (loadedBytes * 8 / 1000000) / Math.min(dlElapsedSec, 8);
       setLiveSpeed(finalDownload);
       setProgress(0.5);
 
@@ -113,7 +131,7 @@ export function useSpeedTest() {
       setLiveSpeed(0);
       
       const upStart = performance.now();
-      const uploadBytesPerConn = 52428800; // 50MB payload to ensure it takes time
+      const uploadBytesPerConn = 52428800; // 50MB payload
       const dummyData = new Uint8Array(uploadBytesPerConn);
       const blob = new Blob([dummyData], { type: 'application/octet-stream' });
       
@@ -141,20 +159,22 @@ export function useSpeedTest() {
                   const currentSpeed = (uploadedBytes * 8 / 1000000) / elapsedSec;
                   setLiveSpeed(currentSpeed);
                   setProgress(0.5 + Math.min((elapsedSec / 8), 1) * 0.4);
+                  
+                  // Add chart data point (offsetting time to start after download)
+                  const totalTime = (8 + elapsedSec).toFixed(1);
+                  newChartData.push({ time: totalTime, download: null, upload: currentSpeed });
+                  setChartData([...newChartData]);
                 }
                 upLastUpdate = now;
               }
               
-              // End early if it takes more than 8 seconds to match download duration
-              if (elapsedSec > 8) {
-                xhr.abort();
-              }
+              if (elapsedSec > 8) xhr.abort();
             }
           };
           
           xhr.onload = () => resolve();
           xhr.onerror = () => resolve();
-          xhr.onabort = () => resolve(); // Abort is considered success for completion
+          xhr.onabort = () => resolve();
           
           xhr.open('POST', '/api/speedtest/upload', true);
           xhr.send(blob);
@@ -164,7 +184,7 @@ export function useSpeedTest() {
       await Promise.all(upPromises);
 
       const upElapsedSec = Math.max((performance.now() - upStart) / 1000, 0.1);
-      finalUpload = (uploadedBytes * 8 / 1000000) / Math.min(upElapsedSec, 8); // clamp to 8 sec max
+      finalUpload = (uploadedBytes * 8 / 1000000) / Math.min(upElapsedSec, 8);
 
       // 4. COMPLETE
       setProgress(1.0);
@@ -173,13 +193,15 @@ export function useSpeedTest() {
       const cleanDownload = isFinite(finalDownload) ? parseFloat(finalDownload.toFixed(2)) : 0;
       const cleanUpload = isFinite(finalUpload) ? parseFloat(finalUpload.toFixed(2)) : 0;
       const cleanPing = isFinite(finalPing) ? parseFloat(finalPing.toFixed(1)) : 0;
+      const cleanJitter = isFinite(finalJitter) ? parseFloat(finalJitter.toFixed(1)) : 0;
       
-      setLiveSpeed(cleanDownload); // Show download on final dial
+      setLiveSpeed(cleanDownload);
 
       const newResult = {
         download: cleanDownload,
         upload: cleanUpload,
         ping: cleanPing,
+        jitter: cleanJitter,
         timestamp: new Date().toISOString()
       };
       
@@ -200,6 +222,7 @@ export function useSpeedTest() {
     setPhase('idle');
     setProgress(0);
     setLiveSpeed(0);
+    setChartData([]);
   }, []);
 
   const handleClearHistory = useCallback(() => {
@@ -215,6 +238,7 @@ export function useSpeedTest() {
     server,
     liveSpeed,
     history,
+    chartData,
     runTest,
     cancelTest,
     isTesting: ['finding_server', 'downloading', 'uploading'].includes(phase),
