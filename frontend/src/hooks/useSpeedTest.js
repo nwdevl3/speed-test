@@ -127,7 +127,7 @@ export function useSpeedTest() {
         xhr.onerror = () => reject(new Error('Upload failed'));
         xhr.onabort = () => reject(new Error('Aborted'));
         
-        xhr.open('POST', 'https://speed.cloudflare.com/__up', true);
+        xhr.open('POST', '/api/speedtest/upload', true);
         xhr.send(blob);
       });
 
