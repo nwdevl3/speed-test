@@ -61,8 +61,8 @@ export function useSpeedTest() {
       const dlStart = performance.now();
       let loadedBytes = 0;
       
-      // Fetch 25MB of random data
-      const dlResponse = await fetch('/api/speedtest/download?size=26214400', {
+      // Fetch 25MB of random data from Cloudflare's edge network for realistic CDNs speeds
+      const dlResponse = await fetch('https://speed.cloudflare.com/__down?bytes=26214400', {
         cache: 'no-cache',
         signal: abortControllerRef.current.signal
       });
@@ -126,7 +126,7 @@ export function useSpeedTest() {
         xhr.onerror = () => reject(new Error('Upload failed'));
         xhr.onabort = () => reject(new Error('Aborted'));
         
-        xhr.open('POST', '/api/speedtest/upload', true);
+        xhr.open('POST', 'https://speed.cloudflare.com/__up', true);
         xhr.send(blob);
       });
 

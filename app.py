@@ -16,19 +16,25 @@ app = Flask(__name__, static_folder=STATIC_DIR, static_url_path='')
 
 def get_network_info():
     """Fetch public IP and ISP/provider details using public APIs."""
-    ip = "Unknown"
+    # Get client IP from request headers (works behind proxies like Render)
+    ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+    if ip and ',' in ip:
+        ip = ip.split(',')[0].strip()
+        
+    if not ip or ip == "127.0.0.1":
+        # Fallback for local testing if needed
+        try:
+            req = urllib.request.Request("https://api.ipify.org?format=json")
+            req.add_header("User-Agent", "Mozilla/5.0")
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                data = json.loads(resp.read().decode("utf-8", errors="ignore"))
+                ip = data.get("ip", "Unknown")
+        except Exception:
+            ip = "Unknown"
+
     isp = "Unknown"
     city = ""
     country = ""
-
-    try:
-        req = urllib.request.Request("https://api.ipify.org?format=json")
-        req.add_header("User-Agent", "Mozilla/5.0")
-        with urllib.request.urlopen(req, timeout=8) as resp:
-            data = json.loads(resp.read().decode("utf-8", errors="ignore"))
-            ip = data.get("ip", "Unknown")
-    except Exception:
-        pass
 
     try:
         target = ip if ip != "Unknown" else ""
