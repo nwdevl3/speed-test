@@ -113,7 +113,7 @@ export function useSpeedTest() {
       setLiveSpeed(0);
       
       const upStart = performance.now();
-      const uploadBytesPerConn = 5242880; // 5MB per connection
+      const uploadBytesPerConn = 52428800; // 50MB payload to ensure it takes time
       const dummyData = new Uint8Array(uploadBytesPerConn);
       const blob = new Blob([dummyData], { type: 'application/octet-stream' });
       
@@ -134,8 +134,9 @@ export function useSpeedTest() {
               uploadedBytes += diff;
 
               const now = performance.now();
+              const elapsedSec = (now - upStart) / 1000;
+              
               if (now - upLastUpdate > 100) {
-                const elapsedSec = (now - upStart) / 1000;
                 if (elapsedSec > 0.1) {
                   const currentSpeed = (uploadedBytes * 8 / 1000000) / elapsedSec;
                   setLiveSpeed(currentSpeed);
@@ -143,12 +144,17 @@ export function useSpeedTest() {
                 }
                 upLastUpdate = now;
               }
+              
+              // End early if it takes more than 8 seconds to match download duration
+              if (elapsedSec > 8) {
+                xhr.abort();
+              }
             }
           };
           
           xhr.onload = () => resolve();
           xhr.onerror = () => resolve();
-          xhr.onabort = () => resolve();
+          xhr.onabort = () => resolve(); // Abort is considered success for completion
           
           xhr.open('POST', '/api/speedtest/upload', true);
           xhr.send(blob);
@@ -158,7 +164,7 @@ export function useSpeedTest() {
       await Promise.all(upPromises);
 
       const upElapsedSec = Math.max((performance.now() - upStart) / 1000, 0.1);
-      finalUpload = (uploadedBytes * 8 / 1000000) / upElapsedSec;
+      finalUpload = (uploadedBytes * 8 / 1000000) / Math.min(upElapsedSec, 8); // clamp to 8 sec max
 
       // 4. COMPLETE
       setProgress(1.0);
