@@ -74,7 +74,7 @@ export default function Speedometer({ speed = 0, phase = 'idle', label = 'ready'
           y1={p1.y}
           x2={p2.x}
           y2={p2.y}
-          stroke={isMajor ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)'}
+          stroke={isMajor ? 'var(--text-muted)' : 'var(--border)'}
           strokeWidth={isMajor ? 1.5 : 0.75}
           strokeLinecap="round"
         />
@@ -89,7 +89,7 @@ export default function Speedometer({ speed = 0, phase = 'idle', label = 'ready'
             y={lp.y}
             textAnchor="middle"
             dominantBaseline="middle"
-            fill="rgba(255,255,255,0.3)"
+            fill="var(--text-muted)"
             fontSize="9"
             fontFamily="Inter, sans-serif"
             fontWeight="500"
@@ -138,7 +138,7 @@ export default function Speedometer({ speed = 0, phase = 'idle', label = 'ready'
         <path
           d={describeArc(ARC_START, ARC_END, RADIUS)}
           fill="none"
-          stroke="rgba(255,255,255,0.06)"
+          stroke="var(--surface-strong)"
           strokeWidth="7"
           strokeLinecap="round"
         />

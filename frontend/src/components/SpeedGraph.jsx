@@ -25,11 +25,16 @@ export default function SpeedGraph({ data }) {
             </linearGradient>
           </defs>
           <XAxis dataKey="time" hide={true} />
-          <YAxis stroke="rgba(255,255,255,0.2)" fontSize={11} tickFormatter={(val) => Math.round(val)} />
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+          <YAxis stroke="var(--text-muted)" fontSize={11} tickFormatter={(val) => Math.round(val)} />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
           <Tooltip 
-            contentStyle={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
-            itemStyle={{ color: '#fff' }}
+            contentStyle={{ 
+              backgroundColor: 'var(--bg-secondary)', 
+              border: '1px solid var(--border)', 
+              borderRadius: '8px',
+              fontSize: '12px'
+            }}
+            itemStyle={{ color: 'var(--text-primary)' }}
             labelStyle={{ display: 'none' }}
           />
           <Area 
