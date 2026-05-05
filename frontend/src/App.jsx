@@ -61,11 +61,12 @@ function App() {
       <ParticleBackground activeSpeed={displaySpeed} />
       <div className="ambient-glow" />
 
-      <HelpMenu />
+
 
       <div className="app-container">
-        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '1rem' }}>
+        <div className="top-bar">
           <ThemeToggle />
+          <HelpMenu />
         </div>
         
         <Header />
