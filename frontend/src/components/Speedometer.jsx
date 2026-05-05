@@ -107,9 +107,9 @@ export default function Speedometer({ speed = 0, phase = 'idle', label = 'ready'
       <svg className="speedometer-svg" viewBox="0 0 320 320">
         <defs>
           <linearGradient id="arcGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#06b6d4" />
-            <stop offset="50%" stopColor="#2dd4bf" />
-            <stop offset="100%" stopColor="#fbbf24" />
+            <stop offset="0%" stopColor="var(--accent-cyan)" />
+            <stop offset="50%" stopColor="var(--accent-teal)" />
+            <stop offset="100%" stopColor="var(--accent-amber)" />
           </linearGradient>
           <filter id="arcGlow">
             <feGaussianBlur stdDeviation="4" result="blur" />
@@ -131,6 +131,9 @@ export default function Speedometer({ speed = 0, phase = 'idle', label = 'ready'
           </radialGradient>
         </defs>
 
+        {/* Decorative outer ring */}
+        <circle cx={CX} cy={CY} r={RADIUS + 15} fill="none" stroke="var(--border)" strokeWidth="0.5" opacity="0.3" />
+
         {/* Subtle center glow */}
         <circle cx={CX} cy={CY} r="80" fill="url(#centerGlow)" />
 
@@ -139,7 +142,16 @@ export default function Speedometer({ speed = 0, phase = 'idle', label = 'ready'
           d={describeArc(ARC_START, ARC_END, RADIUS)}
           fill="none"
           stroke="var(--surface-strong)"
-          strokeWidth="7"
+          strokeWidth="8"
+          strokeLinecap="round"
+        />
+        
+        {/* Glass Outer Glow */}
+        <path
+          d={describeArc(ARC_START, ARC_END, RADIUS)}
+          fill="none"
+          stroke="rgba(255,255,255,0.03)"
+          strokeWidth="16"
           strokeLinecap="round"
         />
 

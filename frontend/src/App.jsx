@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import ParticleBackground from './components/ParticleBackground';
 import Header from './components/Header';
@@ -11,6 +12,8 @@ import ThemeToggle from './components/ThemeToggle';
 import SpeedGraph from './components/SpeedGraph';
 import EstimatorPanel from './components/EstimatorPanel';
 import { useSpeedTest } from './hooks/useSpeedTest';
+import StatusBar from './components/StatusBar';
+import HelpMenu from './components/HelpMenu';
 
 const PHASE_LABELS = {
   idle: 'ready',
@@ -22,6 +25,7 @@ const PHASE_LABELS = {
 };
 
 function App() {
+  const containerRef = useRef(null);
   const {
     phase,
     progress,
@@ -36,13 +40,28 @@ function App() {
     clearHistory,
   } = useSpeedTest();
 
+  const handleMouseMove = (e) => {
+    if (!containerRef.current) return;
+    const { left, top } = containerRef.current.getBoundingClientRect();
+    const x = e.clientX - left;
+    const y = e.clientY - top;
+    containerRef.current.style.setProperty('--x', `${x}px`);
+    containerRef.current.style.setProperty('--y', `${y}px`);
+  };
+
   const displaySpeed = phase === 'complete' && results ? results.download : liveSpeed;
   const label = PHASE_LABELS[phase] || 'ready';
 
   return (
-    <>
-      <ParticleBackground />
+    <div 
+      ref={containerRef} 
+      onMouseMove={handleMouseMove}
+      style={{ minHeight: '100vh', position: 'relative' }}
+    >
+      <ParticleBackground activeSpeed={displaySpeed} />
       <div className="ambient-glow" />
+
+      <HelpMenu />
 
       <div className="app-container">
         <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '1rem' }}>
@@ -115,11 +134,11 @@ function App() {
           )}
         </AnimatePresence>
 
-        <NetworkInfo />
-
         <SpeedHistory history={history} onClear={clearHistory} />
+
+        <StatusBar />
       </div>
-    </>
+    </div>
   );
 }
 

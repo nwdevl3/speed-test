@@ -1,9 +1,8 @@
 import { useRef, useEffect } from 'react';
 
-export default function ParticleBackground() {
+export default function ParticleBackground({ activeSpeed = 0 }) {
   const canvasRef = useRef(null);
-  const mouseRef = useRef({ x: 0, y: 0 });
-  const particlesRef = useRef([]);
+  const streaksRef = useRef([]);
   const animRef = useRef(null);
 
   useEffect(() => {
@@ -18,75 +17,45 @@ export default function ParticleBackground() {
     resize();
     window.addEventListener('resize', resize);
 
-    // Create particles
-    const count = Math.min(60, Math.floor(window.innerWidth / 20));
-    particlesRef.current = Array.from({ length: count }, () => ({
+    // Create streaks
+    const count = 80;
+    streaksRef.current = Array.from({ length: count }, () => ({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
-      vx: (Math.random() - 0.5) * 0.3,
-      vy: (Math.random() - 0.5) * 0.3,
-      r: 1 + Math.random() * 1.5,
-      opacity: 0.15 + Math.random() * 0.25,
-      hue: 180 + Math.random() * 40, // cyan-ish range
+      len: 10 + Math.random() * 40,
+      speed: 0.5 + Math.random() * 2,
+      opacity: 0.1 + Math.random() * 0.3,
+      hue: Math.random() > 0.5 ? 180 : 260, // Cyan or Purple
     }));
-
-    function handleMouseMove(e) {
-      mouseRef.current = { x: e.clientX, y: e.clientY };
-    }
-    window.addEventListener('mousemove', handleMouseMove);
 
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const mx = mouseRef.current.x;
-      const my = mouseRef.current.y;
-
-      particlesRef.current.forEach((p) => {
-        // Subtle mouse attraction
-        const dx = mx - p.x;
-        const dy = my - p.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 200 && dist > 0) {
-          const force = 0.015 * (1 - dist / 200);
-          p.vx += (dx / dist) * force;
-          p.vy += (dy / dist) * force;
+      
+      // Speed multiplier based on active speed
+      const boost = Math.min(activeSpeed / 50, 10);
+      
+      streaksRef.current.forEach((s) => {
+        const currentSpeed = s.speed + boost;
+        s.y += currentSpeed;
+        
+        // Wrap around
+        if (s.y > canvas.height + 50) {
+          s.y = -50;
+          s.x = Math.random() * canvas.width;
         }
 
-        p.x += p.vx;
-        p.y += p.vy;
-
-        // Damping
-        p.vx *= 0.998;
-        p.vy *= 0.998;
-
-        // Wrap around
-        if (p.x < -10) p.x = canvas.width + 10;
-        if (p.x > canvas.width + 10) p.x = -10;
-        if (p.y < -10) p.y = canvas.height + 10;
-        if (p.y > canvas.height + 10) p.y = -10;
+        const gradient = ctx.createLinearGradient(s.x, s.y, s.x, s.y + s.len + boost * 2);
+        gradient.addColorStop(0, `hsla(${s.hue}, 100%, 70%, 0)`);
+        gradient.addColorStop(1, `hsla(${s.hue}, 100%, 70%, ${s.opacity})`);
 
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(${p.hue}, 70%, 70%, ${p.opacity})`;
-        ctx.fill();
+        ctx.strokeStyle = gradient;
+        ctx.lineWidth = 1 + boost * 0.1;
+        ctx.lineCap = 'round';
+        ctx.moveTo(s.x, s.y);
+        ctx.lineTo(s.x, s.y + s.len + boost * 2);
+        ctx.stroke();
       });
-
-      // Draw connections
-      const particles = particlesRef.current;
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          const dx = particles[i].x - particles[j].x;
-          const dy = particles[i].y - particles[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 120) {
-            ctx.beginPath();
-            ctx.moveTo(particles[i].x, particles[i].y);
-            ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.strokeStyle = `rgba(6, 182, 212, ${0.06 * (1 - dist / 120)})`;
-            ctx.lineWidth = 0.5;
-            ctx.stroke();
-          }
-        }
-      }
 
       animRef.current = requestAnimationFrame(draw);
     }
@@ -95,10 +64,9 @@ export default function ParticleBackground() {
 
     return () => {
       window.removeEventListener('resize', resize);
-      window.removeEventListener('mousemove', handleMouseMove);
       if (animRef.current) cancelAnimationFrame(animRef.current);
     };
-  }, []);
+  }, [activeSpeed]);
 
   return <canvas ref={canvasRef} className="particle-canvas" />;
 }

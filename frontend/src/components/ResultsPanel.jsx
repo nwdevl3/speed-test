@@ -147,6 +147,69 @@ export default function ResultsPanel({ results, server, visible }) {
           Server: <span>{server.name}</span> &bull; <span>{server.location}</span>
         </motion.div>
       )}
+
+      {/* Real-World Simulations (Inspired by TRAI) */}
+      <motion.div
+        className="estimator-panel"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.8, duration: 0.5 }}
+        style={{
+          marginTop: '2rem',
+          padding: '1.5rem',
+          background: 'var(--surface)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          borderRadius: '20px',
+          border: '1px solid var(--border)'
+        }}
+      >
+        <h3 style={{ 
+          margin: '0 0 1.25rem 0', 
+          fontSize: '0.75rem', 
+          fontWeight: '700',
+          textTransform: 'uppercase',
+          letterSpacing: '0.1em',
+          color: 'var(--accent-cyan)' 
+        }}>
+          Simulated App Performance
+        </h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem' }}>
+          
+          <div className="estimate-card" style={{ textAlign: 'center', padding: '1rem', background: 'var(--surface)', borderRadius: '12px', border: '1px solid var(--border)' }}>
+            <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>🎬</div>
+            <div style={{ fontSize: '0.65rem', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>4K Video</div>
+            <div style={{ fontSize: '1rem', fontWeight: '800', color: 'var(--text-primary)' }}>
+              {results.download > 25 ? 'Instant' : results.download > 10 ? 'Smooth' : 'Buffering'}
+            </div>
+          </div>
+
+          <div className="estimate-card" style={{ textAlign: 'center', padding: '1rem', background: 'var(--surface)', borderRadius: '12px', border: '1px solid var(--border)' }}>
+            <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>📱</div>
+            <div style={{ fontSize: '0.65rem', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>App Store</div>
+            <div style={{ fontSize: '1rem', fontWeight: '800', color: 'var(--text-primary)' }}>
+              {Math.max(0.2, (50 / results.download)).toFixed(1)}s
+            </div>
+          </div>
+
+          <div className="estimate-card" style={{ textAlign: 'center', padding: '1rem', background: 'var(--surface)', borderRadius: '12px', border: '1px solid var(--border)' }}>
+            <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>🌐</div>
+            <div style={{ fontSize: '0.65rem', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Web Page</div>
+            <div style={{ fontSize: '1rem', fontWeight: '800', color: 'var(--text-primary)' }}>
+              {Math.max(0.1, (results.ping / 100) + (2 / results.download)).toFixed(1)}s
+            </div>
+          </div>
+
+          <div className="estimate-card" style={{ textAlign: 'center', padding: '1rem', background: 'var(--surface)', borderRadius: '12px', border: '1px solid var(--border)' }}>
+            <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>🎮</div>
+            <div style={{ fontSize: '0.65rem', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Gaming</div>
+            <div style={{ fontSize: '1rem', fontWeight: '800', color: results.ping < 30 ? 'var(--accent-teal)' : results.ping < 60 ? 'var(--accent-amber)' : 'var(--error-color)' }}>
+              {results.ping < 30 ? 'Ultra' : results.ping < 60 ? 'Good' : 'Laggy'}
+            </div>
+          </div>
+
+        </div>
+      </motion.div>
     </motion.div>
   );
 }

@@ -9,9 +9,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg'],
       manifest: {
-        name: 'NeoSpeed Test',
-        short_name: 'NeoSpeed',
-        description: 'Next-generation network speed testing utility',
+        name: 'Internet Speed Test',
+        short_name: 'SpeedTest',
+        description: 'Professional network speed testing utility',
         theme_color: '#06090f',
         background_color: '#06090f',
         display: 'standalone',
