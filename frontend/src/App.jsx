@@ -14,6 +14,9 @@ import EstimatorPanel from './components/EstimatorPanel';
 import { useSpeedTest } from './hooks/useSpeedTest';
 import StatusBar from './components/StatusBar';
 import HelpMenu from './components/HelpMenu';
+import Footer from './components/Footer';
+import LegalContent from './components/LegalContent';
+import { useState } from 'react';
 
 const PHASE_LABELS = {
   idle: 'ready',
@@ -39,6 +42,8 @@ function App() {
     isTesting,
     clearHistory,
   } = useSpeedTest();
+
+  const [legalType, setLegalType] = useState(null);
 
   const themeColor = useMemo(() => {
     switch (phase) {
@@ -151,8 +156,20 @@ function App() {
 
         <SpeedHistory history={history} onClear={clearHistory} />
 
+
         <StatusBar />
+        
+        <Footer onOpenLegal={setLegalType} />
       </div>
+
+      <AnimatePresence>
+        {legalType && (
+          <LegalContent 
+            type={legalType} 
+            onClose={() => setLegalType(null)} 
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

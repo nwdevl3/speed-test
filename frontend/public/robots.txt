@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://internetspeed.store/sitemap.xml
