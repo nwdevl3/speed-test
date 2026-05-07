@@ -81,6 +81,14 @@ export default function HelpMenu() {
                     </div>
                   </div>
                 ))}
+
+                <div className="help-tip-box">
+                  <div className="tip-header">
+                    <span className="tip-icon">📱</span>
+                    <h4>PRO TIP: MOBILE NETWORKS</h4>
+                  </div>
+                  <p>Upload speeds on 4G/5G are often significantly lower than downloads. This is normal behavior as mobile towers prioritize download bandwidth for browsing and streaming.</p>
+                </div>
               </div>
               
               <div className="modal-footer">

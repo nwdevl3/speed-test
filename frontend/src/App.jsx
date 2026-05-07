@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useMemo } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import ParticleBackground from './components/ParticleBackground';
 import Header from './components/Header';
@@ -20,7 +20,7 @@ const PHASE_LABELS = {
   finding_server: 'searching',
   downloading: 'download',
   uploading: 'upload',
-  complete: 'download',
+  complete: 'finished',
   error: 'error',
 };
 
@@ -40,6 +40,15 @@ function App() {
     clearHistory,
   } = useSpeedTest();
 
+  const themeColor = useMemo(() => {
+    switch (phase) {
+      case 'downloading': return 'var(--download-color)';
+      case 'uploading': return 'var(--upload-color)';
+      case 'complete': return '#10b981'; // Success Green
+      default: return 'var(--text-muted)';
+    }
+  }, [phase]);
+
   const handleMouseMove = (e) => {
     if (!containerRef.current) return;
     const { left, top } = containerRef.current.getBoundingClientRect();
@@ -56,9 +65,14 @@ function App() {
     <div 
       ref={containerRef} 
       onMouseMove={handleMouseMove}
-      style={{ minHeight: '100vh', position: 'relative' }}
+      style={{ 
+        minHeight: '100vh', 
+        position: 'relative',
+        '--active-theme': themeColor,
+        transition: 'all 0.5s ease'
+      }}
     >
-      <ParticleBackground activeSpeed={displaySpeed} />
+      <ParticleBackground activeSpeed={displaySpeed} themeColor={themeColor} />
       <div className="ambient-glow" />
 
 
