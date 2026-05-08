@@ -1801,3 +1801,43 @@ body::after {
 .legal-modal-body li {
   margin-bottom: 0.5rem;
 }
+
+/* ── FAQ ── */
+.faq-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.faq-item h3 {
+  color: var(--text-primary);
+  font-size: 1.05rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.faq-item h3::before {
+  content: 'Q:';
+  color: var(--accent-cyan);
+  font-weight: 800;
+}
+
+.faq-item p {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin: 0;
+  padding-left: 1.75rem;
+  position: relative;
+}
+
+.faq-item p::before {
+  content: 'A:';
+  position: absolute;
+  left: 0;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
