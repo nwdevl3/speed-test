@@ -293,6 +293,14 @@ def index():
         return "Frontend build not found. Make sure your Render build command includes 'cd frontend && npm install && npm run build'", 404
     return send_from_directory(app.static_folder, 'index.html')
 
+@app.route('/robots.txt')
+def serve_robots():
+    return send_from_directory(app.static_folder, 'robots.txt', mimetype='text/plain')
+
+@app.route('/sitemap.xml')
+def serve_sitemap():
+    return send_from_directory(app.static_folder, 'sitemap.xml', mimetype='application/xml')
+
 @app.route("/<path:path>")
 def catch_all(path):
     """Serve React app for client-side routes; fall back to index.html."""
