@@ -19,7 +19,7 @@ export default function Header() {
             🌐
           </motion.span>
         </div>
-        <h1>INTERNET SPEED</h1>
+        <h1>INTERNET SPEED TEST</h1>
       </motion.div>
       <motion.p 
         className="header-subtitle"

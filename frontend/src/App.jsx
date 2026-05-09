@@ -17,6 +17,7 @@ const SpeedHistory = lazy(() => import('./components/SpeedHistory'));
 const SpeedGraph = lazy(() => import('./components/SpeedGraph'));
 const EstimatorPanel = lazy(() => import('./components/EstimatorPanel'));
 const LegalContent = lazy(() => import('./components/LegalContent'));
+const SEOContent = lazy(() => import('./components/SEOContent'));
 
 const PHASE_LABELS = {
   idle: 'ready',
@@ -134,6 +135,10 @@ function App() {
               </div>
             )}
           </div>
+
+          <Suspense fallback={null}>
+            <SEOContent />
+          </Suspense>
 
           {error && (
             <div className="error-message">

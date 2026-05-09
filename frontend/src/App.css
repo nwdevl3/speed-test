@@ -1841,3 +1841,53 @@ body::after {
   font-weight: 700;
 }
 
+
+/* ── SEO Content ── */
+.seo-content {
+  margin-top: 3rem;
+  padding: 2rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  color: var(--text-secondary);
+}
+
+.seo-content h2 {
+  font-size: 1.5rem;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+
+.seo-content p {
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+.seo-content strong {
+  color: var(--accent-cyan);
+}
+
+.seo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.seo-card {
+  padding: 1.5rem;
+  background: var(--surface-hover);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+}
+
+.seo-card h3 {
+  font-size: 1.1rem;
+  color: var(--text-primary);
+  margin-bottom: 0.75rem;
+}
+
+.seo-card p {
+  font-size: 0.9rem;
+  margin-bottom: 0;
+}
