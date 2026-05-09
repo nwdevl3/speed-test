@@ -7,6 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: null, // Disable automatic injection
       includeAssets: ['icon.svg'],
       manifest: {
         name: 'Internet Speed Test',

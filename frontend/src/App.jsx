@@ -5,18 +5,18 @@ import Header from './components/Header';
 import Speedometer from './components/Speedometer';
 import GoButton from './components/GoButton';
 import ProgressBar from './components/ProgressBar';
-import ResultsPanel from './components/ResultsPanel';
-import NetworkInfo from './components/NetworkInfo';
-import SpeedHistory from './components/SpeedHistory';
-import ThemeToggle from './components/ThemeToggle';
-import SpeedGraph from './components/SpeedGraph';
-import EstimatorPanel from './components/EstimatorPanel';
 import { useSpeedTest } from './hooks/useSpeedTest';
 import StatusBar from './components/StatusBar';
 import HelpMenu from './components/HelpMenu';
 import Footer from './components/Footer';
-import LegalContent from './components/LegalContent';
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
+
+// Lazy load non-critical components
+const ResultsPanel = lazy(() => import('./components/ResultsPanel'));
+const SpeedHistory = lazy(() => import('./components/SpeedHistory'));
+const SpeedGraph = lazy(() => import('./components/SpeedGraph'));
+const EstimatorPanel = lazy(() => import('./components/EstimatorPanel'));
+const LegalContent = lazy(() => import('./components/LegalContent'));
 
 const PHASE_LABELS = {
   idle: 'ready',
@@ -83,79 +83,86 @@ function App() {
 
 
       <div className="app-container">
-        <div className="top-bar">
-          <ThemeToggle />
-          <HelpMenu />
-        </div>
-        
-        <Header />
+        <main>
+          <div className="top-bar">
+            <ThemeToggle />
+            <HelpMenu />
+          </div>
+          
+          <Header />
 
-        <div className="speedometer-section">
-          <Speedometer
-            speed={displaySpeed}
-            phase={phase}
-            label={label}
-          />
-
-          {!isTesting && phase !== 'complete' && (
-            <GoButton
-              onClick={runTest}
-              disabled={isTesting}
-              isTesting={isTesting}
+          <div className="speedometer-section">
+            <Speedometer
+              speed={displaySpeed}
+              phase={phase}
+              label={label}
             />
-          )}
 
-          {isTesting && (
-            <GoButton
-              onClick={() => {}}
-              disabled={true}
-              isTesting={true}
-            />
-          )}
-
-          <ProgressBar
-            progress={progress}
-            phase={phase}
-            visible={isTesting || phase === 'complete'}
-          />
-
-          <SpeedGraph data={chartData} />
-
-          {phase === 'complete' && (
-            <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+            {!isTesting && phase !== 'complete' && (
               <GoButton
                 onClick={runTest}
-                disabled={false}
-                isTesting={false}
+                disabled={isTesting}
+                isTesting={isTesting}
               />
-            </div>
-          )}
-        </div>
+            )}
 
-        {error && (
-          <div className="error-message">
-            Speed test failed: {error}
+            {isTesting && (
+              <GoButton
+                onClick={() => {}}
+                disabled={true}
+                isTesting={true}
+              />
+            )}
+
+            <ProgressBar
+              progress={progress}
+              phase={phase}
+              visible={isTesting || phase === 'complete'}
+            />
+
+              <Suspense fallback={null}>
+              <SpeedGraph data={chartData} />
+            </Suspense>
+
+            {phase === 'complete' && (
+              <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+                <GoButton
+                  onClick={runTest}
+                  disabled={false}
+                  isTesting={false}
+                />
+              </div>
+            )}
           </div>
-        )}
 
-        <AnimatePresence>
-          {phase === 'complete' && results && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-              <ResultsPanel
-                results={results}
-                server={server}
-                visible={true}
-              />
-              <EstimatorPanel 
-                results={results} 
-                visible={true} 
-              />
+          {error && (
+            <div className="error-message">
+              Speed test failed: {error}
             </div>
           )}
-        </AnimatePresence>
 
-        <SpeedHistory history={history} onClear={clearHistory} />
+          <AnimatePresence>
+            {phase === 'complete' && results && (
+              <Suspense fallback={null}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                  <ResultsPanel
+                    results={results}
+                    server={server}
+                    visible={true}
+                  />
+                  <EstimatorPanel 
+                    results={results} 
+                    visible={true} 
+                  />
+                </div>
+              </Suspense>
+            )}
+          </AnimatePresence>
 
+          <Suspense fallback={null}>
+            <SpeedHistory history={history} onClear={clearHistory} />
+          </Suspense>
+        </main>
 
         <StatusBar />
         
@@ -164,10 +171,12 @@ function App() {
 
       <AnimatePresence>
         {legalType && (
-          <LegalContent 
-            type={legalType} 
-            onClose={() => setLegalType(null)} 
-          />
+          <Suspense fallback={null}>
+            <LegalContent 
+              type={legalType} 
+              onClose={() => setLegalType(null)} 
+            />
+          </Suspense>
         )}
       </AnimatePresence>
     </div>

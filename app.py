@@ -15,42 +15,37 @@ app = Flask(__name__, static_folder=STATIC_DIR, static_url_path='')
 
 
 def get_network_info():
-    """Fetch public IP and ISP/provider details using public APIs."""
+    """Fetch public IP and ISP/provider details using a single efficient API call."""
     # Get client IP from request headers (works behind proxies like Render)
     ip = request.headers.get("X-Forwarded-For", request.remote_addr)
     if ip and ',' in ip:
         ip = ip.split(',')[0].strip()
         
-    if not ip or ip == "127.0.0.1":
-        # Fallback for local testing if needed
-        try:
-            req = urllib.request.Request("https://api.ipify.org?format=json")
-            req.add_header("User-Agent", "Mozilla/5.0")
-            with urllib.request.urlopen(req, timeout=8) as resp:
-                data = json.loads(resp.read().decode("utf-8", errors="ignore"))
-                ip = data.get("ip", "Unknown")
-        except Exception:
-            ip = "Unknown"
+    # If it's local or missing, let ip-api.com detect the IP automatically
+    target = ip if (ip and ip != "127.0.0.1" and ip != "localhost") else ""
 
     isp = "Unknown"
     city = ""
     country = ""
+    detected_ip = ip
 
     try:
-        target = ip if (ip and ip != "Unknown" and ip != "127.0.0.1") else ""
+        # One call to get everything: IP, ISP, and Location
         req = urllib.request.Request(f"http://ip-api.com/json/{target}")
         req.add_header("User-Agent", "Mozilla/5.0")
-        with urllib.request.urlopen(req, timeout=8) as resp:
+        with urllib.request.urlopen(req, timeout=5) as resp:
             data = json.loads(resp.read().decode("utf-8", errors="ignore"))
-            isp = data.get("isp") or data.get("org") or data.get("as") or "Unknown"
-            city = data.get("city") or ""
-            country = data.get("country") or ""
+            if data.get("status") == "success":
+                detected_ip = data.get("query")
+                isp = data.get("isp") or data.get("org") or data.get("as") or "Unknown"
+                city = data.get("city") or ""
+                country = data.get("country") or ""
     except Exception:
         pass
 
     return {
         "success": True,
-        "ip": ip,
+        "ip": detected_ip or "Unknown",
         "isp": isp,
         "city": city,
         "country": country,
