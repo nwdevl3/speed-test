@@ -4,10 +4,10 @@ const Footer = ({ onOpenLegal }) => {
   return (
     <footer className="app-footer">
       <div className="footer-links">
-        <button onClick={() => onOpenLegal('faq')}>FAQ</button>
-        <button onClick={() => onOpenLegal('about')}>About Us</button>
-        <button onClick={() => onOpenLegal('privacy')}>Privacy Policy</button>
-        <button onClick={() => onOpenLegal('terms')}>Terms of Service</button>
+        <a href="#faq" onClick={(e) => { e.preventDefault(); onOpenLegal('faq'); }}>FAQ</a>
+        <a href="#about" onClick={(e) => { e.preventDefault(); onOpenLegal('about'); }}>About Us</a>
+        <a href="#privacy" onClick={(e) => { e.preventDefault(); onOpenLegal('privacy'); }}>Privacy Policy</a>
+        <a href="#terms" onClick={(e) => { e.preventDefault(); onOpenLegal('terms'); }}>Terms of Service</a>
       </div>
       <p className="copyright">
         &copy; {new Date().getFullYear()} InternetSpeed.store. All rights reserved.

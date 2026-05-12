@@ -1699,7 +1699,7 @@ body::after {
   margin-bottom: 1rem;
 }
 
-.footer-links button {
+.footer-links a {
   background: none;
   border: none;
   color: var(--text-secondary);
@@ -1708,9 +1708,10 @@ body::after {
   font-weight: 500;
   cursor: pointer;
   transition: color var(--transition-fast);
+  text-decoration: none;
 }
 
-.footer-links button:hover {
+.footer-links a:hover {
   color: var(--accent-cyan);
 }
 

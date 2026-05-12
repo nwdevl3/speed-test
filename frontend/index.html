@@ -7,6 +7,9 @@
     <meta name="description" content="Check your internet download and upload speeds, ping, and jitter with our high-precision speed test. No ads, just performance." />
     <meta name="keywords" content="internet speed test, wifi speed test, broadband speed test, ping test, upload speed, download speed" />
     <meta name="theme-color" content="#06090f" />
+    
+    <!-- Google Site Verification Placeholder (Replace with your code from Search Console) -->
+    <!-- <meta name="google-site-verification" content="YOUR_VERIFICATION_CODE_HERE" /> -->
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
@@ -22,15 +25,40 @@
     <meta property="twitter:description" content="Check your internet download and upload speeds, ping, and jitter with our high-precision speed test." />
     <meta property="twitter:image" content="https://internetspeed.store/og-image.png" />
 
+    <link rel="canonical" href="https://internetspeed.store/" />
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <link rel="apple-touch-icon" href="/icon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Internet Speed Test",
+      "url": "https://internetspeed.store/",
+      "description": "Professional internet speed test utility for measuring download, upload speeds, ping and jitter.",
+      "applicationCategory": "Utility",
+      "operatingSystem": "All",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    }
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Static content for crawlers -->
+      <section style="padding: 2rem; max-width: 800px; margin: 0 auto; font-family: sans-serif; opacity: 0.1;">
+        <h1>Internet Speed Test — Fast, Accurate & Modern</h1>
+        <p>Welcome to InternetSpeed.store. Use our high-precision tool to check your internet download and upload speeds, ping, and jitter. Accurate diagnostics for WiFi and broadband connections.</p>
+      </section>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
