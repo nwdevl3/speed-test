@@ -9,6 +9,7 @@ import { useSpeedTest } from './hooks/useSpeedTest';
 import StatusBar from './components/StatusBar';
 import HelpMenu from './components/HelpMenu';
 import Footer from './components/Footer';
+import ThemeToggle from './components/ThemeToggle';
 import { useState, lazy, Suspense } from 'react';
 
 // Lazy load non-critical components
